@@ -191,6 +191,12 @@ async function handleVoiceUpdate(oldState, newState, client) {
 
         // Check if this is a protected office
         if (isProtectedOffice(guildId, channelId)) {
+            // Skip bots - always allow bots in offices
+            if (newState.member.user.bot) {
+                await updateChannelStatus(newState.channel, client);
+                return;
+            }
+
             // Check if user is allowed
             if (!isUserAllowed(guildId, userId, channelId) &&
                 !newState.member.permissions.has('ManageChannels')) {
