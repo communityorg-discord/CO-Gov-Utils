@@ -81,6 +81,68 @@ class AudioProcessor {
     }
 
     /**
+     * Merge all PCM files into a single combined MP3
+     */
+    async mergeToSingleTrack(sessionPath, outputFilename = 'combined.mp3') {
+        const pcmFiles = fs.readdirSync(sessionPath).filter(f => f.endsWith('.pcm'));
+
+        if (pcmFiles.length === 0) {
+            console.log('[AudioProcessor] No PCM files to merge');
+            return null;
+        }
+
+        const outputPath = path.join(sessionPath, outputFilename);
+
+        // If only one file, just convert it
+        if (pcmFiles.length === 1) {
+            await this.convertToMp3(path.join(sessionPath, pcmFiles[0]), outputPath);
+            fs.unlinkSync(path.join(sessionPath, pcmFiles[0]));
+            return outputPath;
+        }
+
+        // Build ffmpeg command to mix multiple PCM inputs
+        const inputs = [];
+        for (const file of pcmFiles) {
+            inputs.push('-f', 's16le', '-ar', '48000', '-ac', '2', '-i', path.join(sessionPath, file));
+        }
+
+        return new Promise((resolve, reject) => {
+            const ffmpeg = spawn('ffmpeg', [
+                '-y',
+                ...inputs,
+                '-filter_complex', `amix=inputs=${pcmFiles.length}:duration=longest`,
+                '-b:a', '128k',
+                outputPath
+            ]);
+
+            let stderr = '';
+            ffmpeg.stderr.on('data', (data) => {
+                stderr += data.toString();
+            });
+
+            ffmpeg.on('close', (code) => {
+                if (code === 0) {
+                    // Delete PCM files
+                    for (const file of pcmFiles) {
+                        try {
+                            fs.unlinkSync(path.join(sessionPath, file));
+                        } catch (e) { /* ignore */ }
+                    }
+                    console.log(`[AudioProcessor] Merged ${pcmFiles.length} tracks to ${outputFilename}`);
+                    resolve(outputPath);
+                } else {
+                    console.error('[AudioProcessor] Merge failed:', stderr.slice(-500));
+                    reject(new Error(`ffmpeg merge failed with code ${code}`));
+                }
+            });
+
+            ffmpeg.on('error', (err) => {
+                reject(new Error(`Failed to start ffmpeg for merge: ${err.message}`));
+            });
+        });
+    }
+
+    /**
      * Create a zip archive of all MP3 files (requires archiver package)
      */
     async createArchive(sessionPath, outputName) {

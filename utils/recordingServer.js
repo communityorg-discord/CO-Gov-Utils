@@ -30,7 +30,7 @@ class RecordingServer {
             const sessionPath = path.join(this.recordingsPath, sessionId);
 
             if (!fs.existsSync(sessionPath)) {
-                return res.status(404).json({ error: 'Recording not found' });
+                return res.status(404).send('<h1>Recording not found</h1>');
             }
 
             const files = fs.readdirSync(sessionPath)
@@ -41,11 +41,44 @@ class RecordingServer {
                     size: fs.statSync(path.join(sessionPath, f)).size
                 }));
 
-            res.json({
-                sessionId,
-                files,
-                downloadAll: `${this.baseUrl}/recordings/${sessionId}/download`
-            });
+            // Render HTML page
+            let html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Recording - ${sessionId}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 40px; background: #1a1a2e; color: #fff; }
+                    h1 { color: #00d9ff; }
+                    .file { background: #16213e; padding: 15px; margin: 10px 0; border-radius: 8px; }
+                    .file a { color: #00d9ff; text-decoration: none; font-size: 18px; }
+                    .file a:hover { text-decoration: underline; }
+                    .size { color: #888; font-size: 14px; margin-top: 5px; }
+                    audio { width: 100%; margin-top: 10px; }
+                </style>
+            </head>
+            <body>
+                <h1>🎙️ Recording Files</h1>
+                <p>Session: ${sessionId}</p>
+            `;
+
+            if (files.length === 0) {
+                html += '<p>No audio files found yet. Recording may still be processing.</p>';
+            } else {
+                for (const file of files) {
+                    const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+                    html += `
+                    <div class="file">
+                        <a href="${file.url}" download>📥 ${file.filename}</a>
+                        <div class="size">${sizeMB} MB</div>
+                        <audio controls src="${file.url}"></audio>
+                    </div>
+                    `;
+                }
+            }
+
+            html += '</body></html>';
+            res.send(html);
         });
 
         // Download specific file

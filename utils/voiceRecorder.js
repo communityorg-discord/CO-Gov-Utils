@@ -142,8 +142,7 @@ class VoiceRecorder {
 
         const audioStream = session.receiver.subscribe(userId, {
             end: {
-                behavior: EndBehaviorType.AfterSilence,
-                duration: 1000 // End stream after 1 second of silence
+                behavior: EndBehaviorType.Manual // Keep recording until we manually stop
             }
         });
 
@@ -159,12 +158,12 @@ class VoiceRecorder {
         });
 
         pipeline(audioStream, opusDecoder, writeStream, (err) => {
-            if (err) {
+            if (err && err.code !== 'ERR_STREAM_PREMATURE_CLOSE') {
                 console.log(`[VoiceRecorder] Stream error for ${userId}:`, err.message);
             }
         });
 
-        session.userStreams.set(userId, writeStream);
+        session.userStreams.set(userId, { writeStream, audioStream });
         session.userFiles.push({ userId, filename, filepath });
 
         console.log(`[VoiceRecorder] Recording user ${userId}`);
@@ -185,8 +184,13 @@ class VoiceRecorder {
         }
 
         // Stop all user streams
-        for (const [userId, stream] of session.userStreams) {
-            stream.end();
+        for (const [userId, streams] of session.userStreams) {
+            try {
+                if (streams.audioStream) streams.audioStream.destroy();
+                if (streams.writeStream) streams.writeStream.end();
+            } catch (e) {
+                console.log(`[VoiceRecorder] Error closing stream for ${userId}:`, e.message);
+            }
         }
 
         // Play TTS announcement
