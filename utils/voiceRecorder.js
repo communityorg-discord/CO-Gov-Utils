@@ -19,7 +19,7 @@ const prism = require('prism-media');
 
 class VoiceRecorder {
     constructor() {
-        this.activeRecordings = new Map(); // guildId -> recording session
+        this.activeRecordings = new Map(); // channelId -> recording session (supports multi-VC)
         this.recordingsPath = path.join(__dirname, '..', 'data', 'recordings');
 
         // Ensure recordings directory exists
@@ -33,9 +33,10 @@ class VoiceRecorder {
      */
     async startRecording(voiceChannel, textChannel, startedBy) {
         const guildId = voiceChannel.guild.id;
+        const channelId = voiceChannel.id;
 
-        if (this.activeRecordings.has(guildId)) {
-            return { success: false, error: 'Already recording in this server' };
+        if (this.activeRecordings.has(channelId)) {
+            return { success: false, error: 'Already recording this channel' };
         }
 
         // Create session directory
@@ -101,7 +102,7 @@ class VoiceRecorder {
 
         // Set up auto-stop timer (6 hours)
         session.autoStopTimer = setTimeout(() => {
-            this.stopRecording(guildId, 'Auto-stopped after 6 hours');
+            this.stopRecording(channelId, 'Auto-stopped after 6 hours');
         }, session.maxDuration);
 
         // Listen for users speaking
@@ -109,7 +110,7 @@ class VoiceRecorder {
             this._handleUserSpeaking(session, userId);
         });
 
-        this.activeRecordings.set(guildId, session);
+        this.activeRecordings.set(channelId, session);
 
         // Change bot nickname
         try {
@@ -184,10 +185,10 @@ class VoiceRecorder {
     /**
      * Stop recording
      */
-    async stopRecording(guildId, reason = 'Stopped by user') {
-        const session = this.activeRecordings.get(guildId);
+    async stopRecording(channelId, reason = 'Stopped by user') {
+        const session = this.activeRecordings.get(channelId);
         if (!session) {
-            return { success: false, error: 'No active recording in this server' };
+            return { success: false, error: 'No active recording in this channel' };
         }
 
         // Clear auto-stop timer
@@ -250,7 +251,7 @@ class VoiceRecorder {
             JSON.stringify(metadata, null, 2)
         );
 
-        this.activeRecordings.delete(guildId);
+        this.activeRecordings.delete(channelId);
 
         console.log(`[VoiceRecorder] Stopped recording ${session.id} (${reason})`);
 
@@ -268,8 +269,8 @@ class VoiceRecorder {
     /**
      * Get recording status
      */
-    getStatus(guildId) {
-        const session = this.activeRecordings.get(guildId);
+    getStatus(channelId) {
+        const session = this.activeRecordings.get(channelId);
         if (!session) {
             return null;
         }

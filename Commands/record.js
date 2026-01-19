@@ -98,8 +98,16 @@ module.exports = {
     async handleStop(interaction) {
         await interaction.deferReply();
 
-        const guildId = interaction.guild.id;
-        const result = await voiceRecorder.stopRecording(guildId);
+        // Get channel from user's current voice channel
+        const member = interaction.member;
+        if (!member.voice.channel) {
+            return interaction.editReply({
+                content: '❌ You must be in a voice channel to stop its recording!',
+            });
+        }
+
+        const channelId = member.voice.channel.id;
+        const result = await voiceRecorder.stopRecording(channelId);
 
         if (!result.success) {
             return interaction.editReply({
@@ -126,12 +134,21 @@ module.exports = {
     },
 
     async handleStatus(interaction) {
-        const guildId = interaction.guild.id;
-        const status = voiceRecorder.getStatus(guildId);
+        // Get channel from user's current voice channel
+        const member = interaction.member;
+        if (!member.voice.channel) {
+            return interaction.reply({
+                content: '📭 You must be in a voice channel to check its recording status.',
+                ephemeral: true
+            });
+        }
+
+        const channelId = member.voice.channel.id;
+        const status = voiceRecorder.getStatus(channelId);
 
         if (!status) {
             return interaction.reply({
-                content: '📭 No active recording in this server.',
+                content: '📭 No active recording in this channel.',
                 ephemeral: true
             });
         }
