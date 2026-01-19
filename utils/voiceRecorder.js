@@ -296,10 +296,10 @@ class VoiceRecorder {
             const fs = require('fs');
             const os = require('os');
 
-            // Use Google Translate TTS (free, supports Welsh)
-            // Voice: cy-GB (Welsh)
+            // Use Google Translate TTS (free)
+            // Voice: en-GB (British English - closest to Welsh accent available)
             const encodedText = encodeURIComponent(text);
-            const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=cy&client=tw-ob&q=${encodedText}`;
+            const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=en-GB&client=tw-ob&q=${encodedText}`;
 
             // Download TTS audio to temp file
             const tempFile = path.join(os.tmpdir(), `tts-${Date.now()}.mp3`);
