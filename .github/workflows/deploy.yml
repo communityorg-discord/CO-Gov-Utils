@@ -18,4 +18,5 @@ jobs:
             cd ~/CO-Gov-Utils
             git pull origin main
             npm install --production
+            npm run deploy
             pm2 restart gov-utils
