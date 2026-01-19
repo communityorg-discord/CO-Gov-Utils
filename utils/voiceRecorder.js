@@ -44,20 +44,40 @@ class VoiceRecorder {
         mkdirSync(sessionPath, { recursive: true });
 
         // Join the voice channel
-        const connection = joinVoiceChannel({
-            channelId: voiceChannel.id,
-            guildId: guildId,
-            adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-            selfDeaf: false, // Need to hear audio
-            selfMute: true
+        console.log(`[VoiceRecorder] Attempting to join ${voiceChannel.name} (${voiceChannel.id})`);
+
+        let connection;
+        try {
+            connection = joinVoiceChannel({
+                channelId: voiceChannel.id,
+                guildId: guildId,
+                adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+                selfDeaf: false, // Need to hear audio
+                selfMute: true
+            });
+        } catch (joinError) {
+            console.error('[VoiceRecorder] Failed to create connection:', joinError);
+            return { success: false, error: `Connection create failed: ${joinError.message}` };
+        }
+
+        // Add connection event listeners for debugging
+        connection.on('stateChange', (oldState, newState) => {
+            console.log(`[VoiceRecorder] Connection state: ${oldState.status} -> ${newState.status}`);
+        });
+
+        connection.on('error', (error) => {
+            console.error('[VoiceRecorder] Connection error:', error);
         });
 
         try {
             // Wait for connection to be ready
+            console.log('[VoiceRecorder] Waiting for Ready state...');
             await entersState(connection, VoiceConnectionStatus.Ready, 30_000);
+            console.log('[VoiceRecorder] Connection is Ready!');
         } catch (error) {
+            console.error('[VoiceRecorder] Failed to reach Ready state:', error);
             connection.destroy();
-            return { success: false, error: 'Failed to join voice channel' };
+            return { success: false, error: `Failed to join voice channel: ${error.message}` };
         }
 
         // Create recording session
