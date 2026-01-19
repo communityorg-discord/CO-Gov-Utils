@@ -382,9 +382,12 @@ class RecordingServer {
         this.app.get('/recordings/:sessionId/:filename', (req, res) => {
             const { sessionId, filename } = req.params;
 
-            // Skip "mix" - that's handled by the mix endpoint
+            // Skip special endpoints - they're handled by their own routes
             if (filename === 'mix') {
                 return this._handleMix(req, res);
+            }
+            if (filename === 'transcribe') {
+                return this._handleTranscribe(req, res);
             }
 
             const filepath = path.join(this.recordingsPath, sessionId, filename);
