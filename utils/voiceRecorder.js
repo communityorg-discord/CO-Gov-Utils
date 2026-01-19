@@ -94,7 +94,9 @@ class VoiceRecorder {
             userFiles: [], // list of recorded files
             sessionPath,
             maxDuration: 6 * 60 * 60 * 1000, // 6 hours
-            autoStopTimer: null
+            autoStopTimer: null,
+            guild: voiceChannel.guild, // Store guild for nickname restore
+            originalNickname: null
         };
 
         // Set up auto-stop timer (6 hours)
@@ -203,13 +205,17 @@ class VoiceRecorder {
         // Wait a moment for TTS to play
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Reset nickname
+        // Reset nickname before disconnecting
         try {
-            const guild = session.connection.joinConfig.guildId;
-            const botMember = session.connection.joinConfig.guild?.members?.me;
-            // Nickname reset happens after disconnect
+            if (session.guild && session.originalNickname !== undefined) {
+                const botMember = session.guild.members.me;
+                if (botMember && botMember.manageable) {
+                    await botMember.setNickname(session.originalNickname);
+                    console.log(`[VoiceRecorder] Nickname restored to: ${session.originalNickname || '(none)'}`);
+                }
+            }
         } catch (e) {
-            // Ignore
+            console.log('[VoiceRecorder] Could not restore nickname:', e.message);
         }
 
         // Disconnect
@@ -276,13 +282,88 @@ class VoiceRecorder {
     }
 
     /**
-     * Play TTS announcement
+     * Play TTS announcement using Google TTS API
      */
     async _playTTSAnnouncement(connection, text) {
-        // Note: Full TTS requires Google TTS API or similar
-        // For now, we'll skip the actual audio and just log
-        console.log(`[VoiceRecorder] TTS: "${text}"`);
-        // Future: Implement with @google-cloud/text-to-speech or similar
+        try {
+            const https = require('https');
+            const fs = require('fs');
+            const os = require('os');
+
+            // Use Google Translate TTS (free, supports Welsh)
+            // Voice: cy-GB (Welsh)
+            const encodedText = encodeURIComponent(text);
+            const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=cy&client=tw-ob&q=${encodedText}`;
+
+            // Download TTS audio to temp file
+            const tempFile = path.join(os.tmpdir(), `tts-${Date.now()}.mp3`);
+
+            await new Promise((resolve, reject) => {
+                const file = fs.createWriteStream(tempFile);
+                https.get(ttsUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                }, (response) => {
+                    if (response.statusCode === 302 || response.statusCode === 301) {
+                        // Follow redirect
+                        https.get(response.headers.location, {
+                            headers: {
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                            }
+                        }, (res) => {
+                            res.pipe(file);
+                            file.on('finish', () => {
+                                file.close();
+                                resolve();
+                            });
+                        }).on('error', reject);
+                    } else {
+                        response.pipe(file);
+                        file.on('finish', () => {
+                            file.close();
+                            resolve();
+                        });
+                    }
+                }).on('error', reject);
+            });
+
+            // Check if file was created and has content
+            if (!fs.existsSync(tempFile) || fs.statSync(tempFile).size < 100) {
+                console.log('[VoiceRecorder] TTS file not created or too small, skipping audio');
+                return;
+            }
+
+            // Create audio player and play the TTS
+            const player = createAudioPlayer();
+            const resource = createAudioResource(tempFile);
+
+            connection.subscribe(player);
+            player.play(resource);
+
+            // Wait for audio to finish
+            await new Promise((resolve) => {
+                player.on(AudioPlayerStatus.Idle, () => {
+                    // Cleanup temp file
+                    try { fs.unlinkSync(tempFile); } catch (e) { }
+                    resolve();
+                });
+                player.on('error', (error) => {
+                    console.error('[VoiceRecorder] TTS playback error:', error);
+                    try { fs.unlinkSync(tempFile); } catch (e) { }
+                    resolve();
+                });
+                // Timeout after 10 seconds
+                setTimeout(() => {
+                    try { fs.unlinkSync(tempFile); } catch (e) { }
+                    resolve();
+                }, 10000);
+            });
+
+            console.log(`[VoiceRecorder] TTS played: "${text}"`);
+        } catch (error) {
+            console.error('[VoiceRecorder] TTS error:', error.message);
+        }
     }
 
     /**
