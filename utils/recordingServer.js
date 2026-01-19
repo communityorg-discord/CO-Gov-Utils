@@ -476,8 +476,8 @@ class RecordingServer {
             console.log(`[RecordingServer] Transcribing ${sessionId} with local Whisper...`);
 
             // Run local Whisper CLI
-            // Output format: txt, output dir: sessionPath
-            const whisperCmd = `whisper "${combinedPath}" --model base --output_format txt --output_dir "${sessionPath}" --language en`;
+            // Output format: txt, output dir: sessionPath, fp16 false for CPU
+            const whisperCmd = `whisper "${combinedPath}" --model base --output_format txt --output_dir "${sessionPath}" --language en --fp16 False`;
 
             const { stdout, stderr } = await execPromise(whisperCmd, { timeout: 300000 }); // 5 min timeout
 
