@@ -281,6 +281,15 @@ client.once('ready', async () => {
   } catch (e) {
     console.error('[OfficeManager] Panel init failed:', e.message);
   }
+
+  // Start recording download server
+  try {
+    const recordingServer = require('./utils/recordingServer');
+    await recordingServer.start();
+    console.log('[RecordingServer] ✓ Download server started');
+  } catch (e) {
+    console.error('[RecordingServer] Failed to start:', e.message);
+  }
 });
 
 client.on('interactionCreate', async interaction => {

@@ -1,0 +1,147 @@
+/**
+ * Audio Processor
+ * Converts raw PCM audio files to MP3 format
+ */
+
+const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+class AudioProcessor {
+    /**
+     * Convert PCM file to MP3
+     */
+    async convertToMp3(pcmPath, outputPath) {
+        return new Promise((resolve, reject) => {
+            // Use ffmpeg to convert PCM to MP3
+            const ffmpeg = spawn('ffmpeg', [
+                '-y', // Overwrite output
+                '-f', 's16le', // Input format: signed 16-bit little-endian
+                '-ar', '48000', // Sample rate
+                '-ac', '2', // Stereo
+                '-i', pcmPath, // Input file
+                '-b:a', '128k', // Bitrate
+                outputPath // Output file
+            ]);
+
+            let stderr = '';
+            ffmpeg.stderr.on('data', (data) => {
+                stderr += data.toString();
+            });
+
+            ffmpeg.on('close', (code) => {
+                if (code === 0) {
+                    resolve(outputPath);
+                } else {
+                    reject(new Error(`ffmpeg exited with code ${code}: ${stderr}`));
+                }
+            });
+
+            ffmpeg.on('error', (err) => {
+                reject(new Error(`Failed to start ffmpeg: ${err.message}`));
+            });
+        });
+    }
+
+    /**
+     * Process all PCM files in a recording session
+     */
+    async processSession(sessionPath, userMap = {}) {
+        const files = fs.readdirSync(sessionPath).filter(f => f.endsWith('.pcm'));
+        const results = [];
+
+        for (const file of files) {
+            const pcmPath = path.join(sessionPath, file);
+            const mp3Filename = file.replace('.pcm', '.mp3');
+            const mp3Path = path.join(sessionPath, mp3Filename);
+
+            try {
+                await this.convertToMp3(pcmPath, mp3Path);
+
+                // Delete the PCM file to save space
+                fs.unlinkSync(pcmPath);
+
+                // Extract user ID from filename
+                const userId = file.split('-')[0];
+                const username = userMap[userId] || `User-${userId}`;
+
+                results.push({
+                    userId,
+                    username,
+                    filename: mp3Filename,
+                    filepath: mp3Path,
+                    size: fs.statSync(mp3Path).size
+                });
+            } catch (error) {
+                console.error(`[AudioProcessor] Failed to convert ${file}:`, error.message);
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * Create a zip archive of all MP3 files (requires archiver package)
+     */
+    async createArchive(sessionPath, outputName) {
+        // For simplicity, we'll just return the individual files
+        // Full zip implementation would require 'archiver' package
+        const mp3Files = fs.readdirSync(sessionPath).filter(f => f.endsWith('.mp3'));
+        return mp3Files.map(f => path.join(sessionPath, f));
+    }
+
+    /**
+     * Calculate total size of recording files
+     */
+    getTotalSize(sessionPath) {
+        const files = fs.readdirSync(sessionPath);
+        let totalSize = 0;
+
+        for (const file of files) {
+            const stats = fs.statSync(path.join(sessionPath, file));
+            totalSize += stats.size;
+        }
+
+        return totalSize;
+    }
+
+    /**
+     * Format file size in human-readable format
+     */
+    formatSize(bytes) {
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let size = bytes;
+        let unitIndex = 0;
+
+        while (size >= 1024 && unitIndex < units.length - 1) {
+            size /= 1024;
+            unitIndex++;
+        }
+
+        return `${size.toFixed(2)} ${units[unitIndex]}`;
+    }
+
+    /**
+     * Clean up old recordings (older than specified days)
+     */
+    cleanupOldRecordings(recordingsPath, maxAgeDays = 7) {
+        const maxAge = maxAgeDays * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        let cleaned = 0;
+
+        const sessions = fs.readdirSync(recordingsPath);
+        for (const session of sessions) {
+            const sessionPath = path.join(recordingsPath, session);
+            const stats = fs.statSync(sessionPath);
+
+            if (stats.isDirectory() && (now - stats.mtimeMs) > maxAge) {
+                fs.rmSync(sessionPath, { recursive: true, force: true });
+                cleaned++;
+            }
+        }
+
+        return cleaned;
+    }
+}
+
+module.exports = new AudioProcessor();
