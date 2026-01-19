@@ -1,0 +1,195 @@
+{
+  "enabled": true,
+  "logChannelId": "1462299339173920828",
+  "filters": {
+    "slurs": {
+      "enabled": true,
+      "action": "delete_mute",
+      "words": [
+        "nigger",
+        "nigga",
+        "negro",
+        "coon",
+        "spic",
+        "wetback",
+        "beaner",
+        "chink",
+        "gook",
+        "slant",
+        "paki",
+        "towelhead",
+        "camel jockey",
+        "kike",
+        "heeb",
+        "hymie",
+        "faggot",
+        "fag",
+        "dyke",
+        "homo",
+        "queer",
+        "tranny",
+        "retard",
+        "retarded",
+        "tard"
+      ],
+      "exemptRoles": [],
+      "exemptChannels": []
+    },
+    "spam": {
+      "enabled": true,
+      "action": "delete_warn",
+      "maxMessages": 5,
+      "timeframeSeconds": 5,
+      "maxMentions": 5,
+      "maxEmojis": 10,
+      "exemptRoles": [],
+      "exemptChannels": []
+    },
+    "links": {
+      "enabled": true,
+      "action": "delete_warn",
+      "allowedDomains": [
+        "discord.gg",
+        "discord.com",
+        "discordapp.com",
+        "tenor.com",
+        "giphy.com",
+        "imgur.com",
+        "youtube.com",
+        "youtu.be",
+        "roblox.com"
+      ],
+      "blockedPatterns": [
+        "free-nitro",
+        "freenitro",
+        "nitro-gift",
+        "steam-gift",
+        "steamgift",
+        "discord-gift",
+        "discordgift",
+        "claim-reward",
+        "free-robux",
+        "freerobux",
+        "bit.ly",
+        "tinyurl",
+        "shorturl",
+        "t.co",
+        "goo.gl",
+        "is.gd",
+        "v.gd",
+        "dsc.gg",
+        "linktr.ee",
+        "grabify",
+        "iplogger",
+        "blasze.tk",
+        "robux-generator",
+        "vbucks-generator",
+        "free-vbucks"
+      ],
+      "blockInvites": true,
+      "exemptRoles": [],
+      "exemptChannels": []
+    },
+    "caps": {
+      "enabled": true,
+      "action": "warn",
+      "threshold": 0.7,
+      "minLength": 10,
+      "exemptRoles": [],
+      "exemptChannels": []
+    },
+    "duplicates": {
+      "enabled": true,
+      "action": "delete_warn",
+      "threshold": 5,
+      "timeframeMinutes": 5,
+      "exemptRoles": [],
+      "exemptChannels": []
+    }
+  },
+  "economyProtection": {
+    "enabled": true,
+    "maxTransactionsPerHour": 50,
+    "maxTransferAmount": 100000,
+    "suspiciousPatterns": true,
+    "alertOnLargeTransfers": 10000
+  },
+  "raidProtection": {
+    "enabled": true,
+    "joinThreshold": 10,
+    "joinTimeframeSeconds": 60,
+    "action": "lockdown",
+    "autoLockdownMinutes": 15
+  },
+  "ruleDetection": {
+    "enabled": true,
+    "metagaming": {
+      "enabled": false,
+      "action": "warn",
+      "patterns": [
+        "dm me",
+        "check dms"
+      ],
+      "exemptChannels": []
+    },
+    "powergaming": {
+      "enabled": true,
+      "action": "warn",
+      "patterns": [
+        "kills you",
+        "shoots you dead",
+        "you die",
+        "you are dead",
+        "you cant do anything",
+        "no roll"
+      ]
+    },
+    "failrp": {
+      "enabled": false,
+      "action": "warn",
+      "patterns": [
+        "lmao",
+        "rofl"
+      ],
+      "exemptChannels": []
+    },
+    "advertising": {
+      "enabled": true,
+      "action": "delete_warn",
+      "patterns": [
+        "join my server",
+        "check out my",
+        "sub to my",
+        "follow my",
+        "discord.gg/",
+        "twitch.tv/",
+        "youtube.com/c/"
+      ]
+    },
+    "begging": {
+      "enabled": true,
+      "action": "warn",
+      "patterns": [
+        "give me money",
+        "can i have money",
+        "free money",
+        "give me cash",
+        "gimme money",
+        "pls give",
+        "plz give"
+      ]
+    }
+  },
+  "escalation": {
+    "enabled": true,
+    "warnThreshold": 3,
+    "muteThreshold": 2,
+    "muteDurations": [
+      5,
+      15,
+      60,
+      1440
+    ],
+    "autoBanAfterMutes": 4
+  }
+}

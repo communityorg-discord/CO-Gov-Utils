@@ -1,0 +1,52 @@
+{
+  "tickets": {
+    "1462594054591086623": {
+      "id": "SUPPORT-001",
+      "channelId": "1462594054591086623",
+      "userId": "1182035077480337452",
+      "userTag": "metdoppler",
+      "type": "general",
+      "typeName": "General Support",
+      "createdAt": "2026-01-18T23:46:36.400Z",
+      "claimedBy": "419181755208302602",
+      "claimedByTag": "macrustrce",
+      "status": "claimed",
+      "priority": "medium",
+      "notes": []
+    },
+    "1462601117815931031": {
+      "id": "BUG-001",
+      "channelId": "1462601117815931031",
+      "userId": "1013486189891817563",
+      "userTag": "hdpenguin",
+      "type": "bot",
+      "typeName": "Bot/Bug Issue",
+      "createdAt": "2026-01-19T00:14:40.600Z",
+      "claimedBy": "723199054514749450",
+      "claimedByTag": "dionm123",
+      "status": "claimed",
+      "priority": "medium",
+      "notes": []
+    },
+    "1462602743863709717": {
+      "id": "GOVERNMENT-004",
+      "channelId": "1462602743863709717",
+      "userId": "438485596587950092",
+      "userTag": "baldingblade341",
+      "type": "government",
+      "typeName": "Government Issue",
+      "createdAt": "2026-01-19T00:21:08.234Z",
+      "claimedBy": null,
+      "claimedByTag": null,
+      "status": "open",
+      "priority": "medium",
+      "notes": []
+    }
+  },
+  "counter": 1,
+  "counters": {
+    "general": 1,
+    "bot": 1,
+    "government": 4
+  }
+}

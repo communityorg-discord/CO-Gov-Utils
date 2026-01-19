@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Environment files (contain secrets!)
+.env
+
+# Data files (SQLite databases)
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# Transcripts (may contain sensitive data)
+transcripts/
+
+# Test files
+*.txt

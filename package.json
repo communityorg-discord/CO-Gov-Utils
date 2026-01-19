@@ -1,0 +1,30 @@
+{
+  "name": "co-gov-utils",
+  "version": "1.0.0",
+  "description": "CO | Government Utilities - Advanced Moderation & Staff Management",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "deploy": "node deploy-commands.js",
+    "deploy:prod": "node deploy-commands.js --production",
+    "db:init": "node scripts/db-init.js",
+    "db:migrate": "node scripts/db-migrate.js"
+  },
+  "keywords": [
+    "discord",
+    "moderation",
+    "government",
+    "utilities"
+  ],
+  "author": "CO Development Team",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.2.3"
+  }
+}

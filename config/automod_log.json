@@ -1,0 +1,146 @@
+{
+  "actions": [
+    {
+      "type": "spam",
+      "action": "delete_warn",
+      "userId": "824902493745971210",
+      "username": "congib9",
+      "channelId": "1459402664159875085",
+      "messageContent": "SOD",
+      "reason": "Spam detected (7 messages in 5s)",
+      "timestamp": "2026-01-18T19:32:19.443Z"
+    },
+    {
+      "type": "spam",
+      "action": "delete_warn",
+      "userId": "824902493745971210",
+      "username": "congib9",
+      "channelId": "1459402664159875085",
+      "messageContent": "LOL",
+      "reason": "Spam detected (7 messages in 5s)",
+      "timestamp": "2026-01-18T19:32:22.951Z"
+    }
+  ],
+  "userWarnings": {
+    "824902493745971210": 2
+  },
+  "userMutes": {
+    "824902493745971210": 0
+  },
+  "recentMessages": {
+    "983058769040769136": [
+      1768759258750
+    ],
+    "739294048699023443": [
+      1768763747019,
+      1768763747024
+    ],
+    "1023714289783165038": [
+      1768757462097
+    ],
+    "1256504335110635531": [
+      1768758964146
+    ],
+    "346126719461359616": [
+      1768760252180
+    ],
+    "824902493745971210": [
+      1768775680106
+    ],
+    "1182035077480337452": [
+      1768780003173
+    ],
+    "1137385624253501570": [
+      1768782449312
+    ],
+    "438485596587950092": [
+      1768782562117
+    ],
+    "457472388058054658": [
+      1768782934880
+    ]
+  },
+  "duplicateMessages": {
+    "983058769040769136_wtf": [
+      1768755634268,
+      1768755634277
+    ],
+    "739294048699023443_would i need to be vc ?": [
+      1768756002653
+    ],
+    "739294048699023443_well i wouldn’t say small enough lmao since the dni leads all 18 intelligence agencies 😭": [
+      1768756064421
+    ],
+    "739294048699023443_but dm preferably": [
+      1768756068863
+    ],
+    "983058769040769136_4:30 est work for yall?": [
+      1768756090146
+    ],
+    "739294048699023443_i’m free now.": [
+      1768756094836
+    ],
+    "983058769040769136_thatd be 9:30": [
+      1768756108302
+    ],
+    "983058769040769136_for u": [
+      1768756109809
+    ],
+    "1023714289783165038_dm me i won’t be able to vc for a couple weeks": [
+      1768757462104
+    ],
+    "1256504335110635531_yes": [
+      1768758964148
+    ],
+    "983058769040769136_so does 4:30est work or shall we do it via dms": [
+      1768759213771
+    ],
+    "983058769040769136_no its not.": [
+      1768759221206
+    ],
+    "983058769040769136_ill let you know in an hour or so, depends how late i feel like writing lol": [
+      1768759258752
+    ],
+    "346126719461359616_i've taken the liberty of removing most of the bots. if anyone suspects an account to be a bot please let me know!": [
+      1768760252186
+    ],
+    "824902493745971210_i am available next century 🙂": [
+      1768762333675,
+      1768762333678
+    ],
+    "824902493745971210_i all honesty i have no clue in hell lll": [
+      1768762421363
+    ],
+    "1182035077480337452_hola": [
+      1768780003178
+    ],
+    "1137385624253501570_i believe i was paid wrong, i have attached the pay slip if someone could check it out": [
+      1768781932362
+    ],
+    "438485596587950092_hey how may i assist you today": [
+      1768781932494
+    ],
+    "438485596587950092_let me get <@723199054514749450> or <@415922272956710912> to check it out": [
+      1768781971670
+    ],
+    "438485596587950092_": [
+      1768782097925
+    ],
+    "438485596587950092_ty": [
+      1768782323995,
+      1768782396117
+    ],
+    "438485596587950092_thanks mr president <@1137385624253501570> can i help you further": [
+      1768782436544
+    ],
+    "1137385624253501570_your good to close": [
+      1768782449313
+    ],
+    "438485596587950092_u may close": [
+      1768782562119
+    ],
+    "457472388058054658_im free 10:30pm aedt": [
+      1768782934882
+    ]
+  }
+}
