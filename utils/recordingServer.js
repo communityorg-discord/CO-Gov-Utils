@@ -468,46 +468,44 @@ class RecordingServer {
             });
         }
 
-        // Check for OpenAI API key
-        const apiKey = process.env.OPENAI_API_KEY;
-        if (!apiKey) {
-            return res.status(500).json({ error: 'OpenAI API key not configured. Add OPENAI_API_KEY to environment.' });
-        }
-
         try {
-            const FormData = require('form-data');
-            const axios = require('axios');
+            const { exec } = require('child_process');
+            const util = require('util');
+            const execPromise = util.promisify(exec);
 
-            // Create form data with the audio file
-            const form = new FormData();
-            form.append('file', fs.createReadStream(combinedPath), {
-                filename: 'recording.mp3',
-                contentType: 'audio/mpeg'
-            });
-            form.append('model', 'whisper-1');
-            form.append('response_format', 'text');
+            console.log(`[RecordingServer] Transcribing ${sessionId} with local Whisper...`);
 
-            console.log(`[RecordingServer] Transcribing ${sessionId}...`);
+            // Run local Whisper CLI
+            // Output format: txt, output dir: sessionPath
+            const whisperCmd = `whisper "${combinedPath}" --model base --output_format txt --output_dir "${sessionPath}" --language en`;
 
-            const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
-                headers: {
-                    ...form.getHeaders(),
-                    'Authorization': `Bearer ${apiKey}`
-                },
-                maxContentLength: Infinity,
-                maxBodyLength: Infinity
-            });
+            const { stdout, stderr } = await execPromise(whisperCmd, { timeout: 300000 }); // 5 min timeout
 
-            const transcript = response.data;
+            // Whisper outputs to combined.txt in the same directory
+            const whisperOutputPath = path.join(sessionPath, 'combined.txt');
 
-            // Save transcript
-            fs.writeFileSync(transcriptPath, transcript);
+            if (fs.existsSync(whisperOutputPath)) {
+                const transcript = fs.readFileSync(whisperOutputPath, 'utf8').trim();
 
-            console.log(`[RecordingServer] Transcription complete for ${sessionId}`);
-            res.json({ transcript, cached: false });
+                // Rename to our standard transcript.txt
+                fs.renameSync(whisperOutputPath, transcriptPath);
+
+                console.log(`[RecordingServer] Transcription complete for ${sessionId}`);
+                res.json({ transcript, cached: false });
+            } else {
+                throw new Error('Whisper did not produce output file');
+            }
         } catch (error) {
-            console.error('[RecordingServer] Transcription error:', error.response?.data || error.message);
-            res.status(500).json({ error: `Transcription failed: ${error.response?.data?.error?.message || error.message}` });
+            console.error('[RecordingServer] Transcription error:', error.message);
+
+            // Check if Whisper is not installed
+            if (error.message.includes('not found') || error.message.includes('not recognized')) {
+                res.status(500).json({
+                    error: 'Whisper not installed on server. Run: pip install openai-whisper'
+                });
+            } else {
+                res.status(500).json({ error: `Transcription failed: ${error.message}` });
+            }
         }
     }
 
