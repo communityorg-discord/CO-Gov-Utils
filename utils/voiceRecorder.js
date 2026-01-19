@@ -176,10 +176,19 @@ class VoiceRecorder {
             }
         });
 
-        session.userStreams.set(userId, { writeStream, audioStream, opusDecoder });
-        session.userFiles.push({ userId, filename, filepath, offsetMs });
+        // Get user's display name
+        let displayName = `User ${userId.slice(-4)}`;
+        try {
+            const member = session.guild?.members?.cache?.get(userId);
+            if (member) {
+                displayName = member.displayName || member.user.username;
+            }
+        } catch (e) { /* use default */ }
 
-        console.log(`[VoiceRecorder] Recording user ${userId} (offset: ${offsetMs}ms)`);
+        session.userStreams.set(userId, { writeStream, audioStream, opusDecoder });
+        session.userFiles.push({ userId, displayName, filename, filepath, offsetMs });
+
+        console.log(`[VoiceRecorder] Recording ${displayName} (${userId}, offset: ${offsetMs}ms)`);
     }
 
     /**
@@ -240,6 +249,7 @@ class VoiceRecorder {
             startedAt: session.startedAt,
             tracks: session.userFiles.map(f => ({
                 userId: f.userId,
+                displayName: f.displayName,
                 filename: f.filename,
                 offsetMs: f.offsetMs
             }))

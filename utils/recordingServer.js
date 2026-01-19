@@ -51,6 +51,7 @@ class RecordingServer {
                 ? tracks.map(t => ({
                     filename: t.filename,
                     userId: t.userId,
+                    displayName: t.displayName || `User ${t.userId.slice(-4)}`,
                     offsetMs: t.offsetMs,
                     size: fs.existsSync(path.join(sessionPath, t.filename))
                         ? fs.statSync(path.join(sessionPath, t.filename)).size
@@ -59,6 +60,7 @@ class RecordingServer {
                 : pcmFiles.map(f => ({
                     filename: f,
                     userId: f.replace('.pcm', ''),
+                    displayName: `User ${f.replace('.pcm', '').slice(-4)}`,
                     offsetMs: 0,
                     size: fs.statSync(path.join(sessionPath, f)).size
                 }));
@@ -295,10 +297,34 @@ class RecordingServer {
             <a href="${this.baseUrl}/recordings/${sessionId}/mix" class="mix-btn">
                 🎚️ Mix & Download Combined
             </a>
+            <button onclick="transcribeRecording()" class="mix-btn" style="background: linear-gradient(135deg, #2ecc71, #27ae60); margin-left: 16px;">
+                📝 Transcribe to Text
+            </button>
             <p style="color: #666; font-size: 0.85rem; margin-top: 12px;">
-                Combines all tracks into one conversation recording
+                Mix combines all tracks • Transcribe uses AI to convert speech to text
             </p>
+            <div id="transcript-result" style="display: none; margin-top: 20px; text-align: left; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; max-height: 300px; overflow-y: auto;"></div>
         </div>
+        <script>
+            async function transcribeRecording() {
+                const resultDiv = document.getElementById('transcript-result');
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '<p style="color: #888;">⏳ Transcribing... This may take a minute...</p>';
+                
+                try {
+                    const response = await fetch('${this.baseUrl}/recordings/${sessionId}/transcribe');
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        resultDiv.innerHTML = '<p style="color: #ff6b6b;">❌ ' + data.error + '</p>';
+                    } else {
+                        resultDiv.innerHTML = '<h4 style="color: #00d9ff; margin-bottom: 10px;">📝 Transcript' + (data.cached ? ' (cached)' : '') + '</h4><p style="white-space: pre-wrap; color: #ccc;">' + data.transcript + '</p>';
+                    }
+                } catch (err) {
+                    resultDiv.innerHTML = '<p style="color: #ff6b6b;">❌ Failed to transcribe: ' + err.message + '</p>';
+                }
+            }
+        </script>
         ` : ''}
 
         <div class="files-grid">
@@ -331,7 +357,7 @@ class RecordingServer {
                     html += `
             <div class="file-card" style="padding: 16px;">
                 <div class="file-info">
-                    <h3 style="font-size: 1rem;">🎤 Speaker ${file.userId.slice(-4)}</h3>
+                    <h3 style="font-size: 1rem;">🎤 ${file.displayName}</h3>
                     <span class="file-meta">${sizeMB} MB • Started at ${offsetSec}s into recording</span>
                 </div>
             </div>
@@ -375,6 +401,11 @@ class RecordingServer {
             await this._handleMix(req, res);
         });
 
+        // Transcribe recording using OpenAI Whisper
+        this.app.get('/recordings/:sessionId/transcribe', async (req, res) => {
+            await this._handleTranscribe(req, res);
+        });
+
         // Landing page
         this._setupLandingPage();
     }
@@ -411,6 +442,72 @@ class RecordingServer {
         } catch (error) {
             console.error('[RecordingServer] Mix error:', error);
             res.status(500).json({ error: `Mix failed: ${error.message}` });
+        }
+    }
+
+    async _handleTranscribe(req, res) {
+        const sessionId = req.params.sessionId;
+        const sessionPath = path.join(this.recordingsPath, sessionId);
+
+        if (!fs.existsSync(sessionPath)) {
+            return res.status(404).json({ error: 'Recording not found' });
+        }
+
+        // Check if transcript already exists
+        const transcriptPath = path.join(sessionPath, 'transcript.txt');
+        if (fs.existsSync(transcriptPath)) {
+            const transcript = fs.readFileSync(transcriptPath, 'utf8');
+            return res.json({ transcript, cached: true });
+        }
+
+        // Need combined.mp3 to transcribe
+        const combinedPath = path.join(sessionPath, 'combined.mp3');
+        if (!fs.existsSync(combinedPath)) {
+            return res.status(400).json({
+                error: 'No mixed audio file found. Please click "Mix & Download" first to create the combined audio.'
+            });
+        }
+
+        // Check for OpenAI API key
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) {
+            return res.status(500).json({ error: 'OpenAI API key not configured. Add OPENAI_API_KEY to environment.' });
+        }
+
+        try {
+            const FormData = require('form-data');
+            const axios = require('axios');
+
+            // Create form data with the audio file
+            const form = new FormData();
+            form.append('file', fs.createReadStream(combinedPath), {
+                filename: 'recording.mp3',
+                contentType: 'audio/mpeg'
+            });
+            form.append('model', 'whisper-1');
+            form.append('response_format', 'text');
+
+            console.log(`[RecordingServer] Transcribing ${sessionId}...`);
+
+            const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
+                headers: {
+                    ...form.getHeaders(),
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                maxContentLength: Infinity,
+                maxBodyLength: Infinity
+            });
+
+            const transcript = response.data;
+
+            // Save transcript
+            fs.writeFileSync(transcriptPath, transcript);
+
+            console.log(`[RecordingServer] Transcription complete for ${sessionId}`);
+            res.json({ transcript, cached: false });
+        } catch (error) {
+            console.error('[RecordingServer] Transcription error:', error.response?.data || error.message);
+            res.status(500).json({ error: `Transcription failed: ${error.response?.data?.error?.message || error.message}` });
         }
     }
 
