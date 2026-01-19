@@ -33,20 +33,35 @@ class RecordingServer {
                 return res.status(404).send('<h1 style="color:#fff;font-family:sans-serif;text-align:center;margin-top:100px;">Recording not found</h1>');
             }
 
-            const files = fs.readdirSync(sessionPath)
-                .filter(f => f.endsWith('.mp3'))
-                .map(f => {
-                    const stats = fs.statSync(path.join(sessionPath, f));
-                    // Extract username from filename (userId-timestamp.mp3 -> userId)
-                    const userId = f.split('-')[0];
-                    return {
-                        filename: f,
-                        userId,
-                        url: `${this.baseUrl}/recordings/${sessionId}/${f}`,
-                        size: stats.size,
-                        created: stats.mtime
-                    };
-                });
+            // Check for metadata.json first (has track info)
+            let tracks = [];
+            const metadataPath = path.join(sessionPath, 'metadata.json');
+            if (fs.existsSync(metadataPath)) {
+                const metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+                tracks = metadata.tracks || [];
+            }
+
+            // Also check for any PCM or MP3 files
+            const pcmFiles = fs.readdirSync(sessionPath).filter(f => f.endsWith('.pcm'));
+            const mp3Files = fs.readdirSync(sessionPath).filter(f => f.endsWith('.mp3'));
+            const hasCombined = mp3Files.includes('combined.mp3');
+
+            // Build files list from tracks or PCM files
+            const files = tracks.length > 0
+                ? tracks.map(t => ({
+                    filename: t.filename,
+                    userId: t.userId,
+                    offsetMs: t.offsetMs,
+                    size: fs.existsSync(path.join(sessionPath, t.filename))
+                        ? fs.statSync(path.join(sessionPath, t.filename)).size
+                        : 0
+                }))
+                : pcmFiles.map(f => ({
+                    filename: f,
+                    userId: f.replace('.pcm', ''),
+                    offsetMs: 0,
+                    size: fs.statSync(path.join(sessionPath, f)).size
+                }));
 
             // Premium HTML page
             let html = `
@@ -298,20 +313,27 @@ class RecordingServer {
             </div>
 `;
             } else {
+                // Show info about tracks (PCM files can't be previewed in browser)
+                html += `
+            <div style="text-align: center; padding: 20px; background: rgba(255,255,255,0.03); border-radius: 16px; margin-bottom: 20px;">
+                <p style="color: #888; font-size: 0.95rem;">
+                    📊 <strong>${files.length} speaker${files.length > 1 ? 's' : ''}</strong> recorded
+                </p>
+                <p style="color: #666; font-size: 0.85rem; margin-top: 8px;">
+                    Click "Mix & Download Combined" above to get the full conversation as one MP3 file
+                </p>
+            </div>
+`;
+                // Show track list
                 for (const file of files) {
                     const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+                    const offsetSec = (file.offsetMs / 1000).toFixed(1);
                     html += `
-            <div class="file-card">
-                <div class="file-header">
-                    <div class="file-info">
-                        <h3>🎤 Speaker ${file.userId.slice(-4)}</h3>
-                        <span class="file-meta">${sizeMB} MB • ${file.filename}</span>
-                    </div>
-                    <a href="${file.url}" download class="download-btn">
-                        <span>⬇️</span> Download
-                    </a>
+            <div class="file-card" style="padding: 16px;">
+                <div class="file-info">
+                    <h3 style="font-size: 1rem;">🎤 Speaker ${file.userId.slice(-4)}</h3>
+                    <span class="file-meta">${sizeMB} MB • Started at ${offsetSec}s into recording</span>
                 </div>
-                <audio controls src="${file.url}" preload="metadata"></audio>
             </div>
 `;
                 }

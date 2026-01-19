@@ -491,6 +491,12 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     const officeManager = require('./utils/officeManager');
     officeManager.handleVoiceUpdate(oldState, newState, client);
   } catch (e) { /* Office not critical */ }
+
+  // Voice recording - announce joins/leaves during active recording
+  try {
+    const voiceRecorder = require('./utils/voiceRecorder');
+    voiceRecorder.handleVoiceStateChange(oldState, newState);
+  } catch (e) { /* Recording announcements not critical */ }
 });
 
 // Channel events

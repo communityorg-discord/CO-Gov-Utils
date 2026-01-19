@@ -107,63 +107,22 @@ module.exports = {
             });
         }
 
-        // Process the recordings
-        const processingEmbed = new EmbedBuilder()
-            .setTitle('⏳ Processing Recording...')
-            .setDescription('Converting audio files. This may take a moment.')
-            .setColor(0xFFAA00);
-
-        await interaction.editReply({ embeds: [processingEmbed] });
-
-        // Get user display names for file labeling
-        const userMap = {};
-        for (const member of interaction.guild.members.cache.values()) {
-            userMap[member.id] = member.displayName;
-        }
-
-        // Process audio files to MP3 (separate tracks per user)
-        let processedFiles = [];
-        try {
-            processedFiles = await audioProcessor.processSession(result.sessionPath, userMap);
-        } catch (error) {
-            console.error('[Record] Processing error:', error);
-        }
-
-        // Get download URL
+        // Get download URL - files will be processed on website
         const downloadUrl = recordingServer.getDownloadUrl(result.sessionId);
 
         const embed = new EmbedBuilder()
             .setTitle('✅ Recording Complete')
-            .setDescription('Your recording has been processed. Each speaker has their own audio track.')
+            .setDescription('Your recording is ready! Visit the link below to preview individual tracks or download a combined mix.')
             .addFields(
                 { name: '⏱️ Duration', value: result.duration, inline: true },
-                { name: '🎙️ Speakers', value: `${processedFiles.length} tracks`, inline: true },
+                { name: '🎙️ Speakers', value: `${result.fileCount} tracks`, inline: true },
                 { name: '📥 Download', value: `[Click here](${downloadUrl})`, inline: false }
             )
             .setColor(0x00FF00)
             .setFooter({ text: `Session: ${result.sessionId}` })
             .setTimestamp();
 
-        // Try to upload files directly if small enough
-        const totalSize = audioProcessor.getTotalSize(result.sessionPath);
-        if (totalSize < 8 * 1024 * 1024 && processedFiles.length > 0) {
-            const files = processedFiles.slice(0, 10).map(f => ({
-                attachment: f.filepath,
-                name: `${f.username}.mp3`
-            }));
-            await interaction.editReply({ embeds: [embed], files });
-        } else if (processedFiles.length === 0) {
-            embed.setColor(0xFFAA00);
-            embed.setDescription('Recording completed but no audio was captured. Make sure people were speaking!');
-            await interaction.editReply({ embeds: [embed] });
-        } else {
-            embed.addFields({
-                name: '📝 Note',
-                value: 'Files are too large to upload directly. Use the download link above.',
-                inline: false
-            });
-            await interaction.editReply({ embeds: [embed] });
-        }
+        await interaction.editReply({ embeds: [embed] });
     },
 
     async handleStatus(interaction) {

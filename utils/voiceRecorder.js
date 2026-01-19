@@ -122,10 +122,16 @@ class VoiceRecorder {
             console.log('[VoiceRecorder] Could not change nickname:', e.message);
         }
 
-        // Play TTS announcement
-        await this._playTTSAnnouncement(connection, 'Recording has started');
+        // Store voice channel for join/leave announcements
+        session.voiceChannel = voiceChannel;
 
-        console.log(`[VoiceRecorder] Started recording in ${voiceChannel.name} (${sessionId})`);
+        // Count current members (excluding bots)
+        const memberCount = voiceChannel.members.filter(m => !m.user.bot).size;
+
+        // Play TTS announcement with people count
+        await this._playTTSAnnouncement(connection, `The recording has now started with ${memberCount} people in the voice channel`);
+
+        console.log(`[VoiceRecorder] Started recording in ${voiceChannel.name} (${sessionId}) with ${memberCount} people`);
 
         return {
             success: true,
@@ -380,6 +386,40 @@ class VoiceRecorder {
             return `${minutes}m ${seconds % 60}s`;
         }
         return `${seconds}s`;
+    }
+
+    /**
+     * Handle voice state changes for join/leave announcements
+     * Call this from your voiceStateUpdate event handler
+     */
+    async handleVoiceStateChange(oldState, newState) {
+        // Check if there's an active recording in this guild
+        const guildId = newState.guild?.id || oldState.guild?.id;
+        if (!guildId) return;
+
+        const session = this.activeRecordings.get(guildId);
+        if (!session) return;
+
+        // Ignore bots
+        if (newState.member?.user?.bot || oldState.member?.user?.bot) return;
+
+        const channelId = session.voiceChannel?.id;
+        if (!channelId) return;
+
+        // Get display name
+        const displayName = newState.member?.displayName || oldState.member?.displayName || 'Someone';
+
+        // User joined the recording channel
+        if (newState.channelId === channelId && oldState.channelId !== channelId) {
+            console.log(`[VoiceRecorder] ${displayName} joined recording channel`);
+            await this._playTTSAnnouncement(session.connection, `${displayName} has joined the voice channel`);
+        }
+
+        // User left the recording channel
+        else if (oldState.channelId === channelId && newState.channelId !== channelId) {
+            console.log(`[VoiceRecorder] ${displayName} left recording channel`);
+            await this._playTTSAnnouncement(session.connection, `${displayName} has left the voice channel`);
+        }
     }
 }
 
