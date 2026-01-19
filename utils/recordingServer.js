@@ -181,6 +181,26 @@ class RecordingServer {
             box-shadow: 0 10px 30px rgba(0, 217, 255, 0.4);
         }
 
+        .mix-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #9b59b6, #e74c3c);
+            color: #fff;
+            text-decoration: none;
+            padding: 18px 40px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 40px rgba(155, 89, 182, 0.3);
+        }
+
+        .mix-btn:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 20px 50px rgba(155, 89, 182, 0.5);
+        }
+
         audio {
             width: 100%;
             height: 50px;
@@ -255,6 +275,17 @@ class RecordingServer {
             </div>
         </div>
 
+        ${files.length > 0 ? `
+        <div style="text-align: center; margin-bottom: 40px;">
+            <a href="${this.baseUrl}/recordings/${sessionId}/mix" class="mix-btn">
+                🎚️ Mix & Download Combined
+            </a>
+            <p style="color: #666; font-size: 0.85rem; margin-top: 12px;">
+                Combines all tracks into one conversation recording
+            </p>
+        </div>
+        ` : ''}
+
         <div class="files-grid">
 `;
 
@@ -302,6 +333,12 @@ class RecordingServer {
         // Download specific file
         this.app.get('/recordings/:sessionId/:filename', (req, res) => {
             const { sessionId, filename } = req.params;
+
+            // Skip "mix" - that's handled by the mix endpoint
+            if (filename === 'mix') {
+                return this._handleMix(req, res);
+            }
+
             const filepath = path.join(this.recordingsPath, sessionId, filename);
 
             if (!fs.existsSync(filepath)) {
@@ -311,37 +348,60 @@ class RecordingServer {
             res.download(filepath);
         });
 
-        // Download all files as zip (simplified - sends first file for now)
-        this.app.get('/recordings/:sessionId/download', (req, res) => {
-            const sessionId = req.params.sessionId;
-            const sessionPath = path.join(this.recordingsPath, sessionId);
-
-            if (!fs.existsSync(sessionPath)) {
-                return res.status(404).json({ error: 'Recording not found' });
-            }
-
-            const files = fs.readdirSync(sessionPath).filter(f => f.endsWith('.mp3'));
-            if (files.length === 0) {
-                return res.status(404).json({ error: 'No audio files found' });
-            }
-
-            // For now, redirect to files list
-            // Full zip would require 'archiver' package
-            res.json({
-                message: 'Download individual files from the list',
-                files: files.map(f => `${this.baseUrl}/recordings/${sessionId}/${f}`)
-            });
+        // Mix and download combined audio
+        this.app.get('/recordings/:sessionId/mix', async (req, res) => {
+            await this._handleMix(req, res);
         });
 
+        // Landing page
+        this._setupLandingPage();
+    }
+
+    async _handleMix(req, res) {
+        const sessionId = req.params.sessionId;
+        const sessionPath = path.join(this.recordingsPath, sessionId);
+
+        if (!fs.existsSync(sessionPath)) {
+            return res.status(404).json({ error: 'Recording not found' });
+        }
+
+        // Check if already mixed
+        const combinedPath = path.join(sessionPath, 'combined.mp3');
+        if (fs.existsSync(combinedPath)) {
+            return res.download(combinedPath, 'recording-mixed.mp3');
+        }
+
+        // Check if there are PCM files to mix
+        const pcmFiles = fs.readdirSync(sessionPath).filter(f => f.endsWith('.pcm'));
+        if (pcmFiles.length === 0) {
+            return res.status(400).json({ error: 'No audio tracks to mix. Already processed or no audio recorded.' });
+        }
+
+        try {
+            const audioProcessor = require('./audioProcessor');
+            const mixedFile = await audioProcessor.mergeToSingleTrack(sessionPath, 'combined.mp3');
+
+            if (mixedFile) {
+                res.download(mixedFile, 'recording-mixed.mp3');
+            } else {
+                res.status(500).json({ error: 'Failed to create mixed audio' });
+            }
+        } catch (error) {
+            console.error('[RecordingServer] Mix error:', error);
+            res.status(500).json({ error: `Mix failed: ${error.message}` });
+        }
+    }
+
+    _setupLandingPage() {
         // Simple landing page
         this.app.get('/', (req, res) => {
             res.send(`
                 <html>
                     <head><title>CO Gov-Utils Recording Server</title></head>
-                    <body style="font-family: Arial, sans-serif; padding: 20px;">
+                    <body style="font-family: Arial, sans-serif; padding: 20px; background: #0f0f23; color: #fff;">
                         <h1>🎙️ Recording Server</h1>
                         <p>Use <code>/recordings/{sessionId}</code> to access recordings.</p>
-                        <p><a href="/health">Health Check</a></p>
+                        <p><a href="/health" style="color: #00d9ff;">Health Check</a></p>
                     </body>
                 </html>
             `);

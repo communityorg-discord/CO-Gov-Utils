@@ -81,9 +81,16 @@ class AudioProcessor {
     }
 
     /**
-     * Merge all PCM files into a single combined MP3
+     * Merge all PCM files into a single combined MP3 with proper timing
      */
     async mergeToSingleTrack(sessionPath, outputFilename = 'combined.mp3') {
+        // Read metadata for offset info
+        let metadata = null;
+        const metadataPath = path.join(sessionPath, 'metadata.json');
+        if (fs.existsSync(metadataPath)) {
+            metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf8'));
+        }
+
         const pcmFiles = fs.readdirSync(sessionPath).filter(f => f.endsWith('.pcm'));
 
         if (pcmFiles.length === 0) {
@@ -100,18 +107,33 @@ class AudioProcessor {
             return outputPath;
         }
 
-        // Build ffmpeg command to mix multiple PCM inputs
+        // Build ffmpeg command with proper delay offsets for each track
         const inputs = [];
-        for (const file of pcmFiles) {
+        const delays = [];
+
+        for (let i = 0; i < pcmFiles.length; i++) {
+            const file = pcmFiles[i];
             inputs.push('-f', 's16le', '-ar', '48000', '-ac', '2', '-i', path.join(sessionPath, file));
+
+            // Get offset from metadata
+            let offsetMs = 0;
+            if (metadata) {
+                const track = metadata.tracks.find(t => t.filename === file);
+                if (track) offsetMs = track.offsetMs;
+            }
+            delays.push(`[${i}]adelay=${offsetMs}|${offsetMs}[a${i}]`);
         }
+
+        // Build filter: delay each track then mix
+        const mixInputs = pcmFiles.map((_, i) => `[a${i}]`).join('');
+        const filterComplex = `${delays.join(';')};${mixInputs}amix=inputs=${pcmFiles.length}:duration=longest:normalize=0`;
 
         return new Promise((resolve, reject) => {
             const ffmpeg = spawn('ffmpeg', [
                 '-y',
                 ...inputs,
-                '-filter_complex', `amix=inputs=${pcmFiles.length}:duration=longest`,
-                '-b:a', '128k',
+                '-filter_complex', filterComplex,
+                '-b:a', '192k',
                 outputPath
             ]);
 

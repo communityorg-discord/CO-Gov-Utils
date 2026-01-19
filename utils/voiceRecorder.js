@@ -140,13 +140,17 @@ class VoiceRecorder {
             return; // Already recording this user
         }
 
+        // Calculate offset from recording start (for proper mixing later)
+        const offsetMs = Date.now() - session.startedAt;
+
         const audioStream = session.receiver.subscribe(userId, {
             end: {
                 behavior: EndBehaviorType.Manual // Keep recording until we manually stop
             }
         });
 
-        const filename = `${userId}-${Date.now()}.pcm`;
+        // One file per user (no timestamp - just userId)
+        const filename = `${userId}.pcm`;
         const filepath = path.join(session.sessionPath, filename);
         const writeStream = createWriteStream(filepath);
 
@@ -163,10 +167,10 @@ class VoiceRecorder {
             }
         });
 
-        session.userStreams.set(userId, { writeStream, audioStream });
-        session.userFiles.push({ userId, filename, filepath });
+        session.userStreams.set(userId, { writeStream, audioStream, opusDecoder });
+        session.userFiles.push({ userId, filename, filepath, offsetMs });
 
-        console.log(`[VoiceRecorder] Recording user ${userId}`);
+        console.log(`[VoiceRecorder] Recording user ${userId} (offset: ${offsetMs}ms)`);
     }
 
     /**
@@ -215,6 +219,25 @@ class VoiceRecorder {
         const duration = Date.now() - session.startedAt;
         const durationStr = this._formatDuration(duration);
 
+        // Save metadata for mixing (offset info)
+        const metadata = {
+            sessionId: session.id,
+            duration: duration,
+            durationStr: durationStr,
+            startedAt: session.startedAt,
+            tracks: session.userFiles.map(f => ({
+                userId: f.userId,
+                filename: f.filename,
+                offsetMs: f.offsetMs
+            }))
+        };
+
+        const fs = require('fs');
+        fs.writeFileSync(
+            path.join(session.sessionPath, 'metadata.json'),
+            JSON.stringify(metadata, null, 2)
+        );
+
         this.activeRecordings.delete(guildId);
 
         console.log(`[VoiceRecorder] Stopped recording ${session.id} (${reason})`);
@@ -225,6 +248,7 @@ class VoiceRecorder {
             sessionPath: session.sessionPath,
             duration: durationStr,
             fileCount: session.userFiles.length,
+            userFiles: session.userFiles,
             reason
         };
     }
