@@ -20,6 +20,10 @@ module.exports = {
             option.setName('channel')
                 .setDescription('Channel to send the embed to (default: current)')
                 .setRequired(false))
+        .addBooleanOption(option =>
+            option.setName('server_icon')
+                .setDescription('Include the server icon as thumbnail')
+                .setRequired(false))
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
     async execute(interaction) {
@@ -27,6 +31,7 @@ module.exports = {
         const description = interaction.options.getString('description');
         const colorInput = interaction.options.getString('color') || '#0099FF';
         const channel = interaction.options.getChannel('channel') || interaction.channel;
+        const includeServerIcon = interaction.options.getBoolean('server_icon') || false;
 
         // Parse color
         let color;
@@ -42,6 +47,11 @@ module.exports = {
             .setColor(color)
             .setFooter({ text: `Created by ${interaction.user.tag}` })
             .setTimestamp();
+
+        // Add server icon if requested
+        if (includeServerIcon && interaction.guild?.iconURL()) {
+            embed.setThumbnail(interaction.guild.iconURL({ size: 256 }));
+        }
 
         try {
             await channel.send({ embeds: [embed] });
