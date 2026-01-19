@@ -20,3 +20,25 @@ jobs:
             npm install --production
             npm run deploy
             pm2 restart gov-utils
+
+      - name: Notify Discord
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            COLOR=3066993
+            STATUS="✅ Success"
+          else
+            COLOR=15158332
+            STATUS="❌ Failed"
+          fi
+          
+          curl -X POST "${{ secrets.DEPLOY_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "🚀 CO-Gov-Utils Deploy",
+                "description": "**Status:** '"$STATUS"'\n**Commit:** `${{ github.sha }}`\n**By:** ${{ github.actor }}",
+                "color": '"$COLOR"',
+                "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+              }]
+            }'
