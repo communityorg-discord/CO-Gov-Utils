@@ -289,7 +289,7 @@ function getServices() {
 }
 
 function updateServiceStatus(serviceId, status) {
-    execute('UPDATE services SET status = ?, last_check = datetime("now") WHERE service_id = ?', [status, serviceId]);
+    execute(`UPDATE services SET status = ?, last_check = datetime('now') WHERE service_id = ?`, [status, serviceId]);
     return { success: true };
 }
 
@@ -314,7 +314,7 @@ function createIncident({ title, severity, affectedServices, message, scheduledS
 function getIncidents(includeResolved = false) {
     let sql = 'SELECT * FROM incidents';
     if (!includeResolved) {
-        sql += ' WHERE status != "resolved"';
+        sql += ` WHERE status != 'resolved'`;
     }
     sql += ' ORDER BY created_at DESC';
 
@@ -330,7 +330,7 @@ function updateIncident(incidentId, { status, message, createdBy }) {
     execute('UPDATE incidents SET status = ? WHERE incident_id = ?', [status, incidentId]);
 
     if (status === 'resolved') {
-        execute('UPDATE incidents SET resolved_at = datetime("now") WHERE incident_id = ?', [incidentId]);
+        execute(`UPDATE incidents SET resolved_at = datetime('now') WHERE incident_id = ?`, [incidentId]);
     }
 
     execute('INSERT INTO incident_updates (incident_id, status, message, created_by) VALUES (?, ?, ?, ?)',
