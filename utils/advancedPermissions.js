@@ -77,7 +77,12 @@ const COMMAND_RESTRICTIONS = {
   'permission list': { level: 'USER', description: 'View own permissions' },
   'ping': { level: 'USER', description: 'Check bot latency' },
   'help': { level: 'USER', description: 'View help' },
-  'info': { level: 'USER', description: 'View bot info' }
+  'info': { level: 'USER', description: 'View bot info' },
+  'staff add': { level: 'ADMIN', description: 'Create staff account' },
+  'staff link': { level: 'ADMIN', description: 'Link Discord to email' },
+  'staff unlink': { level: 'ADMIN', description: 'Unlink Discord from email' },
+  'staff list': { level: 'SENIOR_MOD', description: 'View all staff' },
+  'staff info': { level: 'MODERATOR', description: 'View staff info' }
 };
 
 // Permission levels (numeric for comparison)

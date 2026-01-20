@@ -239,6 +239,18 @@ const TABLES = {
       result TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
+  `,
+
+  // Staff accounts (links Discord ID to email for dashboard)
+  staff_accounts: `
+    CREATE TABLE IF NOT EXISTS staff_accounts (
+      discord_id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      display_name TEXT,
+      permission_level TEXT,
+      linked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      linked_by TEXT
+    )
   `
 };
 
@@ -259,10 +271,10 @@ const INDEXES = [
 
 async function initTables() {
   console.log('[DB Init] Starting database initialization...');
-  
+
   try {
     const db = initDatabase();
-    
+
     // Create tables
     for (const [name, sql] of Object.entries(TABLES)) {
       try {
@@ -272,7 +284,7 @@ async function initTables() {
         console.error(`[DB Init] ✗ Table ${name}:`, err.message);
       }
     }
-    
+
     // Create indexes
     for (const sql of INDEXES) {
       try {
@@ -282,9 +294,9 @@ async function initTables() {
       }
     }
     console.log(`[DB Init] ✓ Indexes created`);
-    
+
     console.log('[DB Init] Database initialization complete!');
-    
+
   } catch (error) {
     console.error('[DB Init] Fatal error:', error);
     process.exit(1);

@@ -290,6 +290,14 @@ client.once('ready', async () => {
   } catch (e) {
     console.error('[RecordingServer] Failed to start:', e.message);
   }
+
+  // Start Admin API server
+  try {
+    const { initAdminApi } = require('./utils/adminApi');
+    initAdminApi(client);
+  } catch (e) {
+    console.error('[Admin API] Failed to start:', e.message);
+  }
 });
 
 client.on('interactionCreate', async interaction => {
