@@ -72,8 +72,8 @@ module.exports = {
                     });
                 }
 
-                // Link account
-                const linkResult = linkAccount(user.id, email, user.displayName, interaction.user.id);
+                // Link account with password
+                const linkResult = linkAccount(user.id, email, user.displayName, interaction.user.id, password);
                 if (!linkResult.success) {
                     return interaction.editReply({
                         content: `❌ Failed to link account: ${linkResult.error}`

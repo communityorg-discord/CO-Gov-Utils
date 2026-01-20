@@ -9,13 +9,32 @@ const { getUserPermissionLevel, PERMISSION_LEVELS } = require('./advancedPermiss
 /**
  * Link a Discord account to an email
  */
-function linkAccount(discordId, email, displayName, linkedBy) {
+function linkAccount(discordId, email, displayName, linkedBy, password = null) {
     try {
+        // First ensure password column exists
+        try {
+            execute(`ALTER TABLE staff_accounts ADD COLUMN password TEXT DEFAULT NULL`);
+        } catch (e) {
+            // Column already exists
+        }
+
         execute(`
             INSERT OR REPLACE INTO staff_accounts 
-            (discord_id, email, display_name, linked_at, linked_by)
-            VALUES (?, ?, ?, datetime('now'), ?)
-        `, [discordId, email.toLowerCase(), displayName, linkedBy]);
+            (discord_id, email, display_name, linked_at, linked_by, password)
+            VALUES (?, ?, ?, datetime('now'), ?, ?)
+        `, [discordId, email.toLowerCase(), displayName, linkedBy, password]);
+        return { success: true };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
+ * Update staff password
+ */
+function updatePassword(discordId, password) {
+    try {
+        execute('UPDATE staff_accounts SET password = ? WHERE discord_id = ?', [password, discordId]);
         return { success: true };
     } catch (e) {
         return { success: false, error: e.message };
@@ -97,5 +116,6 @@ module.exports = {
     getStaffByEmail,
     getAllStaff,
     verifyEmailAndGetPermissions,
-    updateDisplayName
+    updateDisplayName,
+    updatePassword
 };

@@ -333,6 +333,14 @@ client.on('interactionCreate', async interaction => {
         }
         return interaction.reply({ content: '❌ Join a VC first.', ephemeral: true });
       }
+
+      // Mail modals
+      if (interaction.customId.startsWith('mail_')) {
+        const mailCmd = client.commands.get('mail');
+        if (mailCmd && mailCmd.handleModal) {
+          return mailCmd.handleModal(interaction);
+        }
+      }
     }
 
   } catch (error) {
