@@ -376,6 +376,73 @@ function initAdminApi(client) {
     });
 
     // ========================================
+    // GOVERNMENT OFFICIALS ENDPOINT
+    // ========================================
+
+    app.get('/api/government', async (req, res) => {
+        try {
+            const fs = require('fs');
+            const path = require('path');
+
+            // Read from Economy bot's government_members.json
+            const govPath = path.join(__dirname, '../../CO-Economy-Bot/config/economy/government_members.json');
+
+            if (!fs.existsSync(govPath)) {
+                return res.json({ officials: [], lastUpdated: null });
+            }
+
+            const data = JSON.parse(fs.readFileSync(govPath, 'utf8'));
+            const officials = [];
+
+            for (const [key, member] of Object.entries(data.members || {})) {
+                if (member.status === 'active') {
+                    // Try to get username from Discord
+                    let username = null;
+                    let avatar = null;
+
+                    if (discordClient) {
+                        try {
+                            const user = await discordClient.users.fetch(member.userId);
+                            username = user.username;
+                            avatar = user.displayAvatarURL();
+                        } catch (e) { }
+                    }
+
+                    officials.push({
+                        govId: member.govId,
+                        discordId: member.userId,
+                        username,
+                        avatar,
+                        position: member.currentPosition,
+                        positionKey: member.currentPositionKey,
+                        assignedAt: member.positions?.[member.positions.length - 1]?.assignedAt,
+                        registeredAt: member.registeredAt
+                    });
+                }
+            }
+
+            // Sort by position importance (president first, etc)
+            const positionOrder = ['president', 'vicePresident', 'whiteHouseChiefOfStaff', 'secretaryOfState', 'secretaryOfTreasury', 'secretaryOfDefense', 'attorneyGeneral'];
+            officials.sort((a, b) => {
+                const aIdx = positionOrder.indexOf(a.positionKey);
+                const bIdx = positionOrder.indexOf(b.positionKey);
+                if (aIdx === -1 && bIdx === -1) return a.position.localeCompare(b.position);
+                if (aIdx === -1) return 1;
+                if (bIdx === -1) return -1;
+                return aIdx - bIdx;
+            });
+
+            res.json({
+                officials,
+                totalActive: officials.length,
+                lastUpdated: data.lastUpdated
+            });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // ========================================
     // START SERVER
     // ========================================
 
