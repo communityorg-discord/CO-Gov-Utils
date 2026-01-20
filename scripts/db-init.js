@@ -248,6 +248,7 @@ const TABLES = {
       email TEXT UNIQUE NOT NULL,
       display_name TEXT,
       permission_level TEXT,
+      password TEXT,
       linked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       linked_by TEXT
     )
@@ -294,6 +295,19 @@ async function initTables() {
       }
     }
     console.log(`[DB Init] ✓ Indexes created`);
+
+    // Migrations - add columns to existing tables
+    const migrations = [
+      `ALTER TABLE staff_accounts ADD COLUMN password TEXT`,
+    ];
+    for (const sql of migrations) {
+      try {
+        db.exec(sql);
+        console.log(`[DB Init] ✓ Migration applied`);
+      } catch (err) {
+        // Column already exists
+      }
+    }
 
     console.log('[DB Init] Database initialization complete!');
 
