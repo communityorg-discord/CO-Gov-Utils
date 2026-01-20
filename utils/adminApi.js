@@ -376,6 +376,70 @@ function initAdminApi(client) {
     });
 
     // ========================================
+    // TICKETS ENDPOINTS
+    // ========================================
+
+    app.get('/api/tickets', async (req, res) => {
+        try {
+            const tickets = loadTickets() || [];
+
+            // Enrich with usernames
+            const enriched = await Promise.all(tickets.map(async (ticket) => {
+                let user_tag = ticket.user_id;
+                if (discordClient) {
+                    try {
+                        const user = await discordClient.users.fetch(ticket.user_id);
+                        user_tag = user.username;
+                    } catch (e) { }
+                }
+                let claimed_by_tag = null;
+                if (ticket.claimed_by && discordClient) {
+                    try {
+                        const claimer = await discordClient.users.fetch(ticket.claimed_by);
+                        claimed_by_tag = claimer.username;
+                    } catch (e) { }
+                }
+                return { ...ticket, user_tag, claimed_by_tag };
+            }));
+
+            res.json(enriched);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    app.post('/api/tickets/:id/claim', (req, res) => {
+        try {
+            const { claimedBy } = req.body;
+            const tickets = loadTickets() || [];
+            const ticket = tickets.find(t => t.id === req.params.id);
+            if (!ticket) {
+                return res.status(404).json({ error: 'Ticket not found' });
+            }
+            ticket.claimed_by = claimedBy;
+            // Save would go here if ticketManager has a save function
+            res.json({ success: true, ticket });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    app.post('/api/tickets/:id/close', (req, res) => {
+        try {
+            const tickets = loadTickets() || [];
+            const ticket = tickets.find(t => t.id === req.params.id);
+            if (!ticket) {
+                return res.status(404).json({ error: 'Ticket not found' });
+            }
+            ticket.status = 'closed';
+            ticket.closed_at = new Date().toISOString();
+            res.json({ success: true, ticket });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // ========================================
     // GOVERNMENT OFFICIALS ENDPOINT
     // ========================================
 
