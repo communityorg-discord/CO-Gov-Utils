@@ -19,6 +19,7 @@ const { getStats: getTicketStats, loadTickets } = require('./ticketManager');
 const { getGuildActivity, getTopMessagers, getTopVoice, getUserActivity } = require('./activityTracker');
 const { getAllStaff, getStaffByEmail, getStaffByDiscordId, linkAccount, unlinkAccount } = require('./staffManager');
 const { getUserPermissionLevel, isSuperuser, PERMISSION_LEVELS, hasPermission } = require('./advancedPermissions');
+const statusManager = require('./statusManager');
 
 let discordClient = null;
 
@@ -501,6 +502,167 @@ function initAdminApi(client) {
                 totalActive: officials.length,
                 lastUpdated: data.lastUpdated
             });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // ========================================
+    // STATUS PORTAL ENDPOINTS
+    // ========================================
+
+    // Initialize status tables
+    try {
+        statusManager.initStatusTables();
+    } catch (e) {
+        console.error('[Admin API] Failed to init status tables:', e.message);
+    }
+
+    // Get all services and their status
+    app.get('/api/status', (req, res) => {
+        try {
+            const services = statusManager.getServices();
+            const incidents = statusManager.getIncidents(false);
+            res.json({ services, incidents });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Get all changelogs
+    app.get('/api/changelogs', (req, res) => {
+        try {
+            const system = req.query.system || null;
+            const limit = parseInt(req.query.limit) || 50;
+            const changelogs = statusManager.getChangelogs(system, limit);
+            res.json({ changelogs });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Create changelog (admin only)
+    app.post('/api/changelogs', (req, res) => {
+        try {
+            const result = statusManager.createChangelog(req.body);
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Delete changelog
+    app.delete('/api/changelogs/:id', (req, res) => {
+        try {
+            const result = statusManager.deleteChangelog(req.params.id);
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Get all suggestions
+    app.get('/api/suggestions', (req, res) => {
+        try {
+            const filters = {
+                type: req.query.type || null,
+                status: req.query.status || null,
+                limit: parseInt(req.query.limit) || 100
+            };
+            const suggestions = statusManager.getSuggestions(filters);
+            res.json({ suggestions });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Create suggestion
+    app.post('/api/suggestions', (req, res) => {
+        try {
+            const result = statusManager.createSuggestion(req.body);
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Update suggestion status (admin only)
+    app.patch('/api/suggestions/:id', (req, res) => {
+        try {
+            const { status, adminResponse, respondedBy, respondedByName } = req.body;
+            const result = statusManager.updateSuggestionStatus(req.params.id, status, adminResponse, respondedBy, respondedByName);
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Get incidents
+    app.get('/api/incidents', (req, res) => {
+        try {
+            const includeResolved = req.query.includeResolved === 'true';
+            const incidents = statusManager.getIncidents(includeResolved);
+            res.json({ incidents });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Create incident
+    app.post('/api/incidents', (req, res) => {
+        try {
+            const result = statusManager.createIncident(req.body);
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Update incident
+    app.patch('/api/incidents/:id', (req, res) => {
+        try {
+            const result = statusManager.updateIncident(req.params.id, req.body);
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Update service status
+    app.patch('/api/services/:id', (req, res) => {
+        try {
+            const result = statusManager.updateServiceStatus(req.params.id, req.body.status);
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Get roadmap items
+    app.get('/api/roadmap', (req, res) => {
+        try {
+            const items = statusManager.getRoadmapItems();
+            res.json({ items });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Create roadmap item
+    app.post('/api/roadmap', (req, res) => {
+        try {
+            const result = statusManager.createRoadmapItem(req.body);
+            res.json(result);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // Update roadmap item
+    app.patch('/api/roadmap/:id', (req, res) => {
+        try {
+            const result = statusManager.updateRoadmapItem(req.params.id, req.body);
+            res.json(result);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
