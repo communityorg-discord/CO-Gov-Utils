@@ -128,16 +128,29 @@ function initStatusTables() {
     // Insert default services if none exist
     const existingServices = query('SELECT COUNT(*) as count FROM services');
     if (existingServices[0].count === 0) {
+        // Core Bot Systems
         execute(`INSERT INTO services (service_id, name, description, icon, status) VALUES (?, ?, ?, ?, ?)`,
-            ['gov-utils', 'Gov Utils Bot', 'Moderation & administration bot', '🤖', 'operational']);
+            ['gov-utils', 'Federal Administration System', 'Core moderation & administration platform', '🏛️', 'operational']);
         execute(`INSERT INTO services (service_id, name, description, icon, status) VALUES (?, ?, ?, ?, ?)`,
-            ['economy-bot', 'Economy Bot', 'Economy, banking & government systems', '💰', 'operational']);
+            ['economy-bot', 'National Treasury System', 'Economy, banking & financial services', '💵', 'operational']);
+
+        // Web Applications
         execute(`INSERT INTO services (service_id, name, description, icon, status) VALUES (?, ?, ?, ?, ?)`,
-            ['admin-dashboard', 'Admin Dashboard', 'Staff administration portal', '🖥️', 'operational']);
+            ['admin-dashboard', 'Executive Control Panel', 'Staff administration & case management', '🔐', 'operational']);
         execute(`INSERT INTO services (service_id, name, description, icon, status) VALUES (?, ?, ?, ?, ?)`,
-            ['webmail', 'Webmail', 'Email service for usgrp.xyz', '📧', 'operational']);
+            ['status-portal', 'Public Affairs Portal', 'System status & community feedback', '📊', 'operational']);
         execute(`INSERT INTO services (service_id, name, description, icon, status) VALUES (?, ?, ?, ?, ?)`,
-            ['status-portal', 'Status Portal', 'System status & community portal', '📊', 'operational']);
+            ['webmail', 'Official Communications Hub', 'Secure government email service', '📧', 'operational']);
+
+        // Infrastructure
+        execute(`INSERT INTO services (service_id, name, description, icon, status) VALUES (?, ?, ?, ?, ?)`,
+            ['vps-primary', 'Primary Data Center (ALPHA)', 'Main infrastructure - East Coast', '🖥️', 'operational']);
+        execute(`INSERT INTO services (service_id, name, description, icon, status) VALUES (?, ?, ?, ?, ?)`,
+            ['vps-secondary', 'Secondary Data Center (BRAVO)', 'Backup infrastructure - West Coast', '🖥️', 'operational']);
+
+        // Discord
+        execute(`INSERT INTO services (service_id, name, description, icon, status) VALUES (?, ?, ?, ?, ?)`,
+            ['discord-api', 'Discord Gateway', 'External Discord API connectivity', '🌐', 'operational']);
     }
 
     console.log('[StatusManager] Tables initialized');
