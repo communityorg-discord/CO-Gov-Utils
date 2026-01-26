@@ -1,0 +1,20 @@
+{
+  "sessionId": "1458621643537514590-1768870079096",
+  "duration": 29583,
+  "durationStr": "29s",
+  "startedAt": 1768870079978,
+  "tracks": [
+    {
+      "userId": "415922272956710912",
+      "displayName": "Evan S. | Chief of Staff",
+      "filename": "415922272956710912.pcm",
+      "offsetMs": 689
+    },
+    {
+      "userId": "723199054514749450",
+      "displayName": "Dion M. | President",
+      "filename": "723199054514749450.pcm",
+      "offsetMs": 6917
+    }
+  ]
+}

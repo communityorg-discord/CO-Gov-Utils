@@ -1,0 +1,20 @@
+{
+  "sessionId": "1458621643537514590-1768802278670",
+  "duration": 35965,
+  "durationStr": "35s",
+  "startedAt": 1768802279528,
+  "tracks": [
+    {
+      "userId": "1013486189891817563",
+      "displayName": "Hayden D. | Director of the OMB",
+      "filename": "1013486189891817563.pcm",
+      "offsetMs": 6368
+    },
+    {
+      "userId": "723199054514749450",
+      "displayName": "Dion M. | President",
+      "filename": "723199054514749450.pcm",
+      "offsetMs": 18185
+    }
+  ]
+}
