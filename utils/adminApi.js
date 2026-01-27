@@ -8,7 +8,7 @@ const cors = require('cors');
 
 // API Configuration
 const API_CONFIG = {
-    port: 3003,
+    port: process.env.ADMIN_API_PORT || 3006,
     apiKey: 'usgrp-admin-2026-secure-key-x7k9m2p4'
 };
 
